@@ -1,0 +1,114 @@
+# 固定输入和测试口径；原始 JSON 长期保存到 benchmark-data 分支。
+name: Performance
+
+on:
+  workflow_dispatch:
+    inputs:
+      ofd_ref:
+        description: "zc310/ofd 的分支、标签或完整提交 SHA"
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GOMAXPROCS: "1"
+      GOGC: "100"
+      GOMEMLIMIT: "off"
+      CGO_ENABLED: "1"
+      GOAMD64: v1
+      GOFLAGS: -mod=readonly
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Checkout selected OFD source
+        uses: actions/checkout@v7
+        with:
+          repository: zc310/ofd
+          ref: ${{ inputs.ofd_ref }}
+          path: .sources/ofd
+          persist-credentials: false
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: "stable"
+          cache: true
+          cache-dependency-path: .sources/ofd/go.sum
+
+      - name: Install output inspection tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libffi-dev pkg-config poppler-utils fonts-liberation
+
+      - name: Test history processing and page scripts
+        run: |
+          PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts -p 'test_*.py'
+          node --test web/model.test.mjs
+          node --check web/app.mjs
+
+      - name: Prepare fixed samples and font
+        run: python3 scripts/history.py prepare --font "$RUNNER_TEMP/ofd-font.ttf"
+
+      - name: Build measurement program
+        env:
+          OFD_REF: ${{ inputs.ofd_ref }}
+        run: |
+          python3 scripts/build.py --ofd-dir .sources/ofd --ofd-ref "$OFD_REF" \
+            --test --output "$RUNNER_TEMP/ofd-performance-bin"
+
+      - name: Measure four samples
+        run: |
+          mkdir -p "$RUNNER_TEMP/ofd-performance"
+          "$RUNNER_TEMP/ofd-performance-bin" -font "$RUNNER_TEMP/ofd-font.ttf" -repeat 10 -out "$RUNNER_TEMP/ofd-performance/results"
+
+      - name: Validate outputs and collect environment
+        env:
+          PERFORMANCE_BINARY: ${{ runner.temp }}/ofd-performance-bin
+        run: |
+          python3 scripts/history.py collect \
+            --directory "$RUNNER_TEMP/ofd-performance/results" \
+            --font "$RUNNER_TEMP/ofd-font.ttf" \
+            --output "$RUNNER_TEMP/ofd-performance/record.json"
+
+      - name: Upload raw results and preview outputs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: performance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/ofd-performance/results
+            ${{ runner.temp }}/ofd-performance/record.json
+            !${{ runner.temp }}/ofd-performance/results/font-data/**
+          if-no-files-found: warn
+          retention-days: 30
+
+  store:
+    needs: measure
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    env:
+      GIT_AUTHOR_NAME: github-actions[bot]
+      GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+      GIT_COMMITTER_NAME: github-actions[bot]
+      GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: performance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ofd-performance
+
+      # 不使用会淘汰排队任务的 concurrency；并发写入由脚本 fetch/rebase 后重试。
+      - name: Persist immutable JSON on benchmark-data
+        run: python3 scripts/history.py store --record "$RUNNER_TEMP/ofd-performance/record.json"

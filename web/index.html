@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>OFD Performance · 性能趋势</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">OFD PERFORMANCE</p>
+    <h1>性能趋势</h1>
+    <p>四份固定样本，观察打开文档、首页 PNG、整份 PDF 和全文提取的耗时、内存与输出大小。</p>
+    <nav><a href="https://github.com/zc310/ofd-performance#测量方法">测量方法</a> · <a href="https://github.com/zc310/ofd-performance/actions/workflows/performance.yml">手动测试与运行记录</a> · <a href="https://zc310.github.io/ofd/wasm/">在线阅读器</a></nav>
+  </header>
+  <p id="demo-banner" class="demo-banner" hidden>演示数据 · 数值和提交编号均为合成，仅用于查看页面效果。</p>
+  <p id="status" role="status">正在加载历史记录…</p>
+  <section id="dashboard" hidden>
+    <div class="controls">
+      <label>可比较环境<select id="group"></select></label>
+      <label>操作<select id="operation">
+        <option value="pdf">整份 PDF</option><option value="png">首页 PNG</option>
+        <option value="open">打开文档</option><option value="text">全文提取</option>
+      </select></label>
+      <label>指标<select id="metric">
+        <option value="median_ms">耗时中位数（ms）</option>
+        <option value="max_rss_mib">进程峰值内存（MiB）</option>
+        <option value="output_bytes">输出大小（字节）</option>
+      </select></label>
+    </div>
+    <p id="environment" class="muted"></p>
+    <div class="chart" id="chart"></div>
+    <div id="legend" class="legend"></div>
+    <p class="muted">横轴为测试完成的先后顺序；悬停或聚焦数据点查看数值，点击进入对应提交。托管机器仍有负载波动，相同环境组中的连续多次结果更有参考价值。</p>
+    <h2>最新结果</h2>
+    <p id="latest"></p>
+    <div class="table-wrap"><table>
+      <caption>所选环境与操作的最新一次测量；变化相对该环境的上一次测量。</caption>
+      <thead><tr><th>样本</th><th>耗时中位数</th><th>耗时范围</th><th>峰值内存</th><th>输出大小</th><th>所选指标变化</th></tr></thead>
+      <tbody id="results"></tbody>
+    </table></div>
+    <h2>历史记录</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>测量时间</th><th>请求版本</th><th>OFD 提交</th><th>测量工具</th><th>Actions</th><th>原始数据</th></tr></thead>
+      <tbody id="history"></tbody>
+    </table></div>
+  </section>
+  <noscript>此页面需要 JavaScript。原始 JSON 可从仓库 benchmark-data 分支的 history 目录下载。</noscript>
+  <footer>每项预跑 1 次，再执行 10 个独立进程。耗时包含打开、处理和关闭，不含编译、进程启动及产物落盘。峰值 RSS 覆盖整个进程；PDF 关闭页面并行渲染。</footer>
+</main>
+</body>
+</html>
