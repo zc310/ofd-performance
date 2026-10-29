@@ -86,7 +86,7 @@ func runChild(input, operation, artifact string) error {
 	start := time.Now()
 	switch operation {
 	case "open":
-		reader, err := webreader.OpenInput(input, webreader.OpenOptions{})
+		reader, err := webreader.Open(input)
 		if err != nil {
 			return err
 		}

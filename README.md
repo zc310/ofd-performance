@@ -47,7 +47,7 @@ GOMAXPROCS=1、GOGC=100、GOMEMLIMIT=off。测试顺序执行。
 | `testdata/ofdrw/y.ofd` | 3 |
 
 每个样本测试四项：打开文档、打开并生成首页 PNG、整份文档转 PDF、提取全文。
-打开文档使用 `webreader.OpenInput`；PNG、PDF 和文字均直接调用 `converter` 包。
+打开文档使用 `webreader.Open`；PNG、PDF 和文字均直接调用 `converter` 包。
 首页 PNG 使用 `converter.Convert` 和 `Page(1)`，150 DPI、白色背景，当前编码器压缩级别为 7；
 PDF 使用 150 DPI、白色背景、默认压缩和字体子集，
 关闭页面并行渲染。文字提取使用默认接口，不启用 OCR。
