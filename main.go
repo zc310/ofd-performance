@@ -24,6 +24,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/zc310/ofd/pkg/converter"
+	_ "github.com/zc310/ofd/pkg/converter/import/pdf"
 	"github.com/zc310/ofd/pkg/webreader"
 )
 
@@ -32,7 +33,7 @@ var (
 	errOutput    = errors.New("测量结果无效")
 )
 
-const measurementMethod = "ofd-process-v1"
+const measurementMethod = "ofd-process-v2"
 
 type measurement struct {
 	File        string  `json:"file"`
@@ -105,6 +106,11 @@ func runChild(input, operation, artifact string) error {
 			return err
 		}
 		data = buffer.Bytes()
+	case "pdf-to-ofd":
+		if err := converter.Convert(ctx, "pdf", "ofd", input, &buffer); err != nil {
+			return err
+		}
+		data = buffer.Bytes()
 	case "text":
 		if err := converter.Text(ctx, input, &buffer); err != nil {
 			return err
@@ -147,6 +153,7 @@ func runSuite(output string, repeat int, fontFile string, systemFontsOnly bool) 
 	files := []string{
 		"testdata/ofdrw/zsbk.ofd", "testdata/ofdrw/intro.ofd",
 		"testdata/ofd-creator/1000-pages.ofd", "testdata/ofdrw/y.ofd",
+		"testdata/standards/GBT_33190-2016.pdf", "testdata/standards/GBT_42133-2022.pdf",
 	}
 	var samples []sample
 	for _, file := range files {
@@ -203,14 +210,22 @@ func runSuite(output string, repeat int, fontFile string, systemFontsOnly bool) 
 	}
 	var results []measurement
 	for _, file := range files {
-		for _, operation := range []string{"open", "png", "pdf", "text"} {
+		operations := []string{"open", "png", "pdf", "text"}
+		if filepath.Ext(file) == ".pdf" {
+			operations = []string{"pdf-to-ofd"}
+		}
+		for _, operation := range operations {
 			name := filepath.Base(file) + "." + operation
+			artifactName := name
+			if operation == "pdf-to-ofd" {
+				artifactName = strings.TrimSuffix(filepath.Base(file), filepath.Ext(file)) + ".ofd"
+			}
 			var times []float64
 			for i := 0; i <= repeat; i++ {
 				args := []string{"-child", "-input", file, "-operation", operation}
 				// 只在预跑中落盘，正式测量的峰值 RSS 不含产物落盘。
 				if i == 0 {
-					args = append(args, "-artifact", filepath.Join(output, name))
+					args = append(args, "-artifact", filepath.Join(output, artifactName))
 				}
 				command := exec.CommandContext(context.Background(), executable, args...)
 				command.Env = environment

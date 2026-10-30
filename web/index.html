@@ -13,7 +13,7 @@
   <header>
     <p class="eyebrow">OFD PERFORMANCE</p>
     <h1>性能趋势</h1>
-    <p>四份固定样本，观察打开文档、首页 PNG、整份 PDF 和全文提取的耗时、内存与输出大小。</p>
+    <p>固定 OFD 与 PDF 样本的转换耗时、内存和输出大小。</p>
     <nav><a href="https://github.com/zc310/ofd-performance#测量方法">测量方法</a> · <a href="https://github.com/zc310/ofd-performance/actions/workflows/performance.yml">手动测试与运行记录</a> · <a href="https://zc310.github.io/ofd/wasm/">在线阅读器</a></nav>
   </header>
   <p id="demo-banner" class="demo-banner" hidden>演示数据 · 数值和提交编号均为合成，仅用于查看页面效果。</p>
@@ -22,7 +22,8 @@
     <div class="controls">
       <label>可比较环境<select id="group"></select></label>
       <label>操作<select id="operation">
-        <option value="pdf">整份 PDF</option><option value="png">首页 PNG</option>
+        <option value="pdf">OFD → PDF</option><option value="pdf-to-ofd">PDF → OFD</option>
+        <option value="png">首页 PNG</option>
         <option value="open">打开文档</option><option value="text">全文提取</option>
       </select></label>
       <label>指标<select id="metric">
@@ -49,7 +50,7 @@
     </table></div>
   </section>
   <noscript>此页面需要 JavaScript。原始 JSON 可从仓库 benchmark-data 分支的 history 目录下载。</noscript>
-  <footer>每项预跑 1 次，再执行 10 个独立进程。耗时包含打开、处理和关闭，不含编译、进程启动及产物落盘。峰值 RSS 覆盖整个进程；PDF 关闭页面并行渲染。</footer>
+  <footer>每项预跑 1 次，再执行 10 个独立进程。耗时包含打开、处理和关闭，不含编译、进程启动及产物落盘。峰值 RSS 覆盖整个进程。</footer>
 </main>
 </body>
 </html>

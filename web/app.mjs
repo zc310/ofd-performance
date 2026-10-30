@@ -1,7 +1,7 @@
 import { groups, series, change } from './model.mjs';
 
 const $ = id => document.getElementById(id);
-const colors = ['#3b82f6', '#e67e22', '#20a88a', '#b27af5'];
+const colors = ['#3b82f6', '#e67e22', '#20a88a', '#b27af5', '#d14d72', '#7c9b32'];
 const format = (n, digits = 2) => n.toLocaleString('zh-CN', { maximumFractionDigits: digits });
 const basename = path => path.split('/').at(-1);
 const unit = metric => ({ median_ms: 'ms', max_rss_mib: 'MiB', output_bytes: '字节' })[metric];

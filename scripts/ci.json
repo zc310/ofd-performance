@@ -1,11 +1,13 @@
 {
-  "method": "ofd-process-v1",
+  "method": "ofd-process-v2",
   "fixtures_revision": "5bcfd48b3586cc2de281964affbedbce5109d428",
   "samples": [
-    {"path": "testdata/ofdrw/zsbk.ofd", "sha256": "c010c33b10ad91786eaad2de63f9a18ef4a91f96b5e41ba731505fcde9073845", "pages": 2},
-    {"path": "testdata/ofdrw/intro.ofd", "sha256": "df7bf847df8c6e6416180ee5cbcfdc13b3bf6ab5314b12958588c709329374f3", "pages": 42},
-    {"path": "testdata/ofd-creator/1000-pages.ofd", "sha256": "6eea08e9173027e60e2d1420ce607ae53ddf7f9452905f9b64039377e798c0ee", "pages": 1000},
-    {"path": "testdata/ofdrw/y.ofd", "sha256": "c1a8c3b55335fbbb8a71ff5aef2844cc0883cdf571727a1a74f1f9bd0a928d48", "pages": 3}
+    {"path": "testdata/ofdrw/zsbk.ofd", "sha256": "c010c33b10ad91786eaad2de63f9a18ef4a91f96b5e41ba731505fcde9073845", "pages": 2, "format": "ofd"},
+    {"path": "testdata/ofdrw/intro.ofd", "sha256": "df7bf847df8c6e6416180ee5cbcfdc13b3bf6ab5314b12958588c709329374f3", "pages": 42, "format": "ofd"},
+    {"path": "testdata/ofd-creator/1000-pages.ofd", "sha256": "6eea08e9173027e60e2d1420ce607ae53ddf7f9452905f9b64039377e798c0ee", "pages": 1000, "format": "ofd"},
+    {"path": "testdata/ofdrw/y.ofd", "sha256": "c1a8c3b55335fbbb8a71ff5aef2844cc0883cdf571727a1a74f1f9bd0a928d48", "pages": 3, "format": "ofd"},
+    {"path": "testdata/standards/GBT_33190-2016.pdf", "sha256": "3c6da794cd5d2c33d968668583e5c0c909d1c0c554a2de37fb02788b72471051", "pages": 132, "format": "pdf"},
+    {"path": "testdata/standards/GBT_42133-2022.pdf", "sha256": "b32289bc8fe49dd9f63ec572a09f97a9e868a809b104f747d184fd8f97ac4e78", "pages": 14, "format": "pdf"}
   ],
   "font": {
     "url": "https://raw.githubusercontent.com/google/fonts/b68b528a75da7d9b73f3928899c07a23083a6633/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf",

@@ -16,11 +16,18 @@ import tempfile
 import time
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
+import zipfile
 
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
-OPERATIONS = ("open", "png", "pdf", "text")
+OFD_OPERATIONS = ("open", "png", "pdf", "text")
+OPERATIONS = OFD_OPERATIONS + ("pdf-to-ofd",)
+
+
+def sample_operations(sample):
+    return ("pdf-to-ofd",) if sample.get("format") == "pdf" else OFD_OPERATIONS
 
 
 def command(*args, cwd=None):
@@ -57,18 +64,23 @@ def download(url):
             time.sleep(2)
 
 
-def prepare(root, font_path, config):
+def prepare(root, font_path, config, fixture_dir=None):
     for sample in config["samples"]:
         path = Path(root) / sample["path"]
         if path.exists() and digest(path.read_bytes()) == sample["sha256"]:
             continue
-        url = ("https://raw.githubusercontent.com/zc310/ofd-fixtures/"
-               + config["fixtures_revision"] + "/" + sample["path"])
-        data = download(url)
+        if fixture_dir:
+            data = (Path(fixture_dir) / sample["path"]).read_bytes()
+        else:
+            url = ("https://raw.githubusercontent.com/zc310/ofd-fixtures/"
+                   + config["fixtures_revision"] + "/" + sample["path"])
+            data = download(url)
         if digest(data) != sample["sha256"]:
             raise ValueError(f"样本 SHA-256 不匹配: {sample['path']}")
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
+    if fixture_dir:
+        return
     font = config["font"]
     data = download(font["url"])
     blob = b"blob " + str(len(data)).encode() + b"\0" + data
@@ -94,7 +106,8 @@ def validate(raw, config):
         raise ValueError("无效的测量次数")
     groups = defaultdict(list)
     for row in raw["results"]:
-        if row["file"] not in expected or row["operation"] not in OPERATIONS:
+        sample = expected.get(row["file"])
+        if sample is None or row["operation"] not in sample_operations(sample):
             raise ValueError("发现未知测试项目")
         for field in ("elapsed_ms", "process_ms", "peak_rss_kib", "output_bytes"):
             value = row[field]
@@ -105,12 +118,12 @@ def validate(raw, config):
         if row["operation"] == "png":
             if row["width"] <= 0 or row["height"] <= 0 or row["output_bytes"] == 0:
                 raise ValueError("首页 PNG 为空")
-        if row["operation"] == "pdf" and row["output_bytes"] == 0:
-            raise ValueError("PDF 输出为空")
+        if row["operation"] in ("pdf", "pdf-to-ofd") and row["output_bytes"] == 0:
+            raise ValueError("文档转换输出为空")
         if row["operation"] == "text" and row.get("characters", 0) <= 0:
             raise ValueError("本组样本文字输出应非空")
         groups[(row["file"], row["operation"])].append(row)
-    if set(groups) != {(path, op) for path in expected for op in OPERATIONS}:
+    if set(groups) != {(sample["path"], op) for sample in expected.values() for op in sample_operations(sample)}:
         raise ValueError("测试项目不齐全")
     summary = []
     for (path, operation), rows in groups.items():
@@ -131,6 +144,19 @@ def validate_artifacts(directory, config):
     checked = []
     for sample in config["samples"]:
         name = Path(sample["path"]).name
+        if sample.get("format") == "pdf":
+            ofd = Path(directory) / (Path(name).stem + ".ofd")
+            try:
+                with zipfile.ZipFile(ofd) as archive:
+                    root = ET.fromstring(archive.read("Doc_0/Document.xml"))
+            except (OSError, KeyError, zipfile.BadZipFile, ET.ParseError) as error:
+                raise ValueError(f"OFD 产物无效: {name}: {error}") from error
+            pages = root.find("{http://www.ofdspec.org/2016}Pages")
+            count = len(pages.findall("{http://www.ofdspec.org/2016}Page")) if pages is not None else 0
+            if count != sample["pages"]:
+                raise ValueError(f"OFD 页面数量错误: {name}: {count}")
+            checked.append({"sample": sample["path"], "ofd_pages": count})
+            continue
         pdf = Path(directory) / (name + ".pdf")
         info = command("pdfinfo", str(pdf))
         pages = re.search(r"^Pages:\s*(\d+)$", info, re.MULTILINE)
@@ -346,6 +372,7 @@ def main():
     prepare_args = commands.add_parser("prepare")
     prepare_args.add_argument("--root", default=".")
     prepare_args.add_argument("--font", required=True)
+    prepare_args.add_argument("--fixtures-dir", help="从本地 fixture 目录复制并校验样本，不下载固定字体")
     collect_args = commands.add_parser("collect")
     collect_args.add_argument("--directory", required=True)
     collect_args.add_argument("--font", required=True)
@@ -360,7 +387,7 @@ def main():
     args = parser.parse_args()
     config = read_json(HERE / "ci.json")
     if args.action == "prepare":
-        prepare(args.root, args.font, config)
+        prepare(args.root, args.font, config, args.fixtures_dir)
     elif args.action == "collect":
         record = collect(args.directory, args.font, config, args.output)
         if summary := os.environ.get("GITHUB_STEP_SUMMARY"):

@@ -18,14 +18,17 @@ def generate(output):
     timings = {
         "open": (145, 55, 56, 82), "png": (690, 100, 115, 305),
         "pdf": (625, 1430, 2190, 585), "text": (160, 87, 88, 87),
+        "pdf-to-ofd": (95000, 8100),
     }
     memory = {
         "open": (77, 76, 77, 88), "png": (172, 94, 100, 162),
         "pdf": (167, 415, 380, 242), "text": (86, 92, 97, 90),
+        "pdf-to-ofd": (820, 190),
     }
     sizes = {
         "open": (0, 0, 0, 0), "png": (440000, 88000, 123000, 298000),
         "pdf": (1930000, 9730000, 8430000, 1580000), "text": (4747, 15702, 518999, 20797),
+        "pdf-to-ofd": (12800000, 1500000),
     }
     total = 0
     with tempfile.TemporaryDirectory(prefix="ofd-performance-demo-history-") as directory:
@@ -47,23 +50,24 @@ def generate(output):
                     "samples": config["samples"], "results": [],
                 }
                 for sample_index, sample in enumerate(config["samples"]):
-                    for operation in history.OPERATIONS:
-                        improvement = (0.32 if operation == "pdf" else 0.10) * progress
+                    for operation in history.sample_operations(sample):
+                        metric_index = sample_index if sample.get("format") != "pdf" else sample_index - 4
+                        improvement = (0.32 if operation in ("pdf", "pdf-to-ofd") else 0.10) * progress
                         # 中段出现一次小幅回退，让曲线更接近日常版本变化。
                         regression = 0.13 if index == count // 2 else 0
                         for _ in range(10):
                             jitter = rng.uniform(0.97, 1.04)
-                            elapsed = timings[operation][sample_index] * speed * (1 - improvement + regression) * jitter
-                            rss = memory[operation][sample_index] * (1 - improvement * .65) * rng.uniform(.98, 1.03)
-                            size = sizes[operation][sample_index]
-                            if operation == "pdf":
+                            elapsed = timings[operation][metric_index] * speed * (1 - improvement + regression) * jitter
+                            rss = memory[operation][metric_index] * (1 - improvement * .65) * rng.uniform(.98, 1.03)
+                            size = sizes[operation][metric_index]
+                            if operation in ("pdf", "pdf-to-ofd"):
                                 size = round(size * (1 - .24 * progress))
                             row = {
                                 "file": sample["path"], "operation": operation, "elapsed_ms": round(elapsed, 3),
                                 "process_ms": round(elapsed + 7, 3), "peak_rss_kib": round(rss * 1024),
                                 "output_bytes": size,
                             }
-                            if operation == "open":
+                            if operation in ("open", "pdf-to-ofd"):
                                 row["pages"] = sample["pages"]
                             elif operation == "png":
                                 row.update(width=1241, height=1754)

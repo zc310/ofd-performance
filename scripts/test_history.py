@@ -22,7 +22,7 @@ class HistoryTests(unittest.TestCase):
             "results": [],
         }
         for sample in self.config["samples"]:
-            for operation in history.OPERATIONS:
+            for operation in history.sample_operations(sample):
                 for elapsed in (10, 20):
                     self.raw["results"].append({
                         "file": sample["path"], "operation": operation, "elapsed_ms": elapsed,
@@ -50,7 +50,9 @@ class HistoryTests(unittest.TestCase):
 
     def test_summary_preserves_median_range_and_maximum_rss(self):
         summary = history.validate(self.raw, self.config)
-        self.assertEqual(len(summary), 16)
+        self.assertEqual(len(summary), 18)
+        converted = next(row for row in summary if row["operation"] == "pdf-to-ofd")
+        self.assertEqual(converted["median_ms"], 15)
         self.assertEqual(summary[0]["median_ms"], 15)
         self.assertEqual(summary[0]["min_ms"], 10)
         self.assertEqual(summary[0]["max_ms"], 20)
@@ -69,6 +71,10 @@ class HistoryTests(unittest.TestCase):
             invalid = copy.deepcopy(self.raw)
             invalid["results"][2][field] = value
             variants.append(invalid)
+        empty_ofd = copy.deepcopy(self.raw)
+        converted = next(row for row in empty_ofd["results"] if row["operation"] == "pdf-to-ofd")
+        converted["output_bytes"] = 0
+        variants.append(empty_ofd)
         wrong_method = copy.deepcopy(self.raw)
         wrong_method["method"] = "unknown-method"
         variants.append(wrong_method)

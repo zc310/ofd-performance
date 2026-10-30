@@ -64,7 +64,7 @@ jobs:
           python3 scripts/build.py --ofd-dir .sources/ofd --ofd-ref "$OFD_REF" \
             --test --output "$RUNNER_TEMP/ofd-performance-bin"
 
-      - name: Measure four samples
+      - name: Measure fixed samples
         run: |
           mkdir -p "$RUNNER_TEMP/ofd-performance"
           "$RUNNER_TEMP/ofd-performance-bin" -font "$RUNNER_TEMP/ofd-font.ttf" -repeat 10 -out "$RUNNER_TEMP/ofd-performance/results"
