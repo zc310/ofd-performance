@@ -183,12 +183,11 @@ def font_manifest(font_path):
 
 
 def comparison_key(raw, environment, config):
-    """源码和依赖是比较对象；CPU、测试方法及输入等条件决定是否可连线。"""
+    """源码和依赖是比较对象；运行环境决定是否可连线，缺失的样本显示为空点。"""
     return {
-        "method": config["method"], "go": raw["go_version"], "gomaxprocs": raw["gomaxprocs"],
+        "go": raw["go_version"], "gomaxprocs": raw["gomaxprocs"],
         "repeat": raw["repeat"],
         "system_fonts_only": raw["system_fonts_only"],
-        "samples": sorted([s["path"], s["sha256"]] for s in raw["samples"]),
         "font_manifest": environment["font_manifest"], "cpu": environment["cpu"],
         "affinity_cpus": environment["affinity_cpus"], "os": environment["os"],
         "arch": environment["arch"], "gogc": environment["gogc"], "gomemlimit": environment["gomemlimit"],
@@ -197,6 +196,12 @@ def comparison_key(raw, environment, config):
         "go_flags": environment["go_env"]["GOFLAGS"], "go_experiment": environment["go_env"]["GOEXPERIMENT"],
         "limits": environment["limits"],
     }
+
+
+def display_group(comparison):
+    """忽略旧历史中的测量口径和样本清单，按共同环境重组趋势。"""
+    key = {name: value for name, value in comparison.items() if name not in ("method", "samples")}
+    return digest(json.dumps(key, sort_keys=True).encode())
 
 
 def collect(directory, font_path, config, output):
@@ -357,7 +362,8 @@ def site(history, output):
             raise ValueError(f"历史记录文件名不匹配: {path}")
         # 页面只加载摘要；每次原始记录仍可按链接下载。
         records.append({key: record[key] for key in
-                         ("id", "date", "commit", "repository", "run_url", "group", "summary", "ofd_ref", "benchmark_commit", "workflow_repository")}
+                         ("id", "date", "commit", "repository", "run_url", "summary", "ofd_ref", "benchmark_commit", "workflow_repository")}
+                        | {"group": display_group(record["comparison"])}
                         | {"cpu": record["environment"]["cpu"], "go": record["raw"]["go_version"]})
         records[-1]["demo"] = bool(record.get("demo"))
         write_json(output / "history" / path.name, record)

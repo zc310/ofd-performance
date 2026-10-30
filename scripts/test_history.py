@@ -95,6 +95,20 @@ class HistoryTests(unittest.TestCase):
             raw = copy.deepcopy(self.raw)
             raw[field] = value
             self.assertNotEqual(baseline, history.comparison_key(raw, self.environment, self.config))
+        changed_method = copy.deepcopy(self.config)
+        changed_method["method"] = "ofd-process-v1"
+        self.assertEqual(baseline, history.comparison_key(self.raw, self.environment, changed_method))
+        fewer_samples = copy.deepcopy(self.raw)
+        fewer_samples["samples"] = fewer_samples["samples"][:-2]
+        self.assertEqual(baseline, history.comparison_key(fewer_samples, self.environment, self.config))
+
+    def test_display_group_joins_legacy_records_with_different_method_and_samples(self):
+        record = self.record()
+        legacy = copy.deepcopy(record["comparison"])
+        legacy["method"] = "ofd-process-v1"
+        legacy["samples"] = sorted([sample["path"], sample["sha256"]]
+                                    for sample in self.config["samples"][:4])
+        self.assertEqual(history.display_group(record["comparison"]), history.display_group(legacy))
 
     def test_site_supports_first_run_and_keeps_downloadable_raw_data(self):
         with tempfile.TemporaryDirectory() as directory:
