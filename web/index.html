@@ -13,7 +13,7 @@
   <header>
     <p class="eyebrow">OFD PERFORMANCE</p>
     <h1>性能趋势</h1>
-    <p>固定 OFD 与 PDF 样本的转换耗时、内存和输出大小。</p>
+    <p>OFD 样本测打开、转 PNG/PDF 和文字提取；PDF 样本测转 OFD。</p>
     <nav><a href="https://github.com/zc310/ofd-performance#测量方法">测量方法</a> · <a href="https://github.com/zc310/ofd-performance/actions/workflows/performance.yml">手动测试与运行记录</a> · <a href="https://zc310.github.io/ofd/wasm/">在线阅读器</a></nav>
   </header>
   <p id="demo-banner" class="demo-banner" hidden>演示数据 · 数值和提交编号均为合成，仅用于查看页面效果。</p>
@@ -22,9 +22,15 @@
     <div class="controls">
       <label>可比较环境<select id="group"></select></label>
       <label>操作<select id="operation">
-        <option value="pdf">OFD → PDF</option><option value="pdf-to-ofd">PDF → OFD</option>
-        <option value="png">首页 PNG</option>
-        <option value="open">打开文档</option><option value="text">全文提取</option>
+        <optgroup label="OFD 输入">
+          <option value="open">打开 OFD</option>
+          <option value="png">OFD → 首页 PNG</option>
+          <option value="pdf">OFD → PDF</option>
+          <option value="text">OFD → 全文提取</option>
+        </optgroup>
+        <optgroup label="PDF 输入">
+          <option value="pdf-to-ofd">PDF → OFD</option>
+        </optgroup>
       </select></label>
       <label>指标<select id="metric">
         <option value="median_ms">耗时中位数（ms）</option>
