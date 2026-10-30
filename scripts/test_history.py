@@ -91,7 +91,10 @@ class HistoryTests(unittest.TestCase):
             environment = copy.deepcopy(self.environment)
             environment[field] = "changed"
             self.assertNotEqual(baseline, history.comparison_key(self.raw, environment, self.config))
-        for field, value in (("repeat", 10), ("go_version", "go1.27.4")):
+        raw = copy.deepcopy(self.raw)
+        raw["go_version"] = "go1.27.4"
+        self.assertEqual(baseline, history.comparison_key(raw, self.environment, self.config))
+        for field, value in (("repeat", 10),):
             raw = copy.deepcopy(self.raw)
             raw[field] = value
             self.assertNotEqual(baseline, history.comparison_key(raw, self.environment, self.config))
@@ -108,7 +111,10 @@ class HistoryTests(unittest.TestCase):
         legacy["method"] = "ofd-process-v1"
         legacy["samples"] = sorted([sample["path"], sample["sha256"]]
                                     for sample in self.config["samples"][:4])
-        self.assertEqual(history.display_group(record["comparison"]), history.display_group(legacy))
+        legacy["go"] = "go1.27.3"
+        current = copy.deepcopy(record["comparison"])
+        current["go"] = "go1.27.4"
+        self.assertEqual(history.display_group(current), history.display_group(legacy))
 
     def test_site_supports_first_run_and_keeps_downloadable_raw_data(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -124,6 +130,7 @@ class HistoryTests(unittest.TestCase):
             data = history.read_json(output / "data.json")["records"]
             self.assertEqual(len(data), 1)
             self.assertEqual(data[0]["summary"], record["summary"])
+            self.assertEqual(data[0]["go"], record["raw"]["go_version"])
             self.assertNotIn("raw", data[0])
             self.assertEqual(history.read_json(output / "history" / (record["id"] + ".json")), record)
 

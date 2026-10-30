@@ -185,7 +185,7 @@ def font_manifest(font_path):
 def comparison_key(raw, environment, config):
     """源码和依赖是比较对象；运行环境决定是否可连线，缺失的样本显示为空点。"""
     return {
-        "go": raw["go_version"], "gomaxprocs": raw["gomaxprocs"],
+        "gomaxprocs": raw["gomaxprocs"],
         "repeat": raw["repeat"],
         "system_fonts_only": raw["system_fonts_only"],
         "font_manifest": environment["font_manifest"], "cpu": environment["cpu"],
@@ -200,7 +200,7 @@ def comparison_key(raw, environment, config):
 
 def display_group(comparison):
     """忽略旧历史中的测量口径和样本清单，按共同环境重组趋势。"""
-    key = {name: value for name, value in comparison.items() if name not in ("method", "samples")}
+    key = {name: value for name, value in comparison.items() if name not in ("method", "samples", "go")}
     return digest(json.dumps(key, sort_keys=True).encode())
 
 

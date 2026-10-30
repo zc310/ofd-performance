@@ -6,6 +6,7 @@ const format = (n, digits = 2) => n.toLocaleString('zh-CN', { maximumFractionDig
 const basename = path => path.split('/').at(-1);
 const unit = metric => ({ median_ms: 'ms', max_rss_mib: 'MiB', output_bytes: '字节' })[metric];
 let environments = [];
+let allRecords = [];
 
 function link(text, href) {
   const a = document.createElement(href ? 'a' : 'span');
@@ -74,12 +75,14 @@ function drawChart(records, operation, metric) {
 }
 
 function render() {
-  const records = environments.find(([id]) => id === $('group').value)[1];
+  const selected = environments.find(([id]) => id === $('group').value);
+  if (!selected) return;
+  const records = selected[1];
   const latest = records.at(-1);
   const previous = records.at(-2);
   const operation = $('operation').value;
   const metric = $('metric').value;
-  $('environment').textContent = `${latest.cpu} · ${latest.go} · GOMAXPROCS=1 · ${records.length} 次测量 · 环境 ${latest.group.slice(0, 12)}`;
+  $('environment').textContent = `${latest.cpu} · GOMAXPROCS=1 · ${records.length} 次测量 · 环境 ${latest.group.slice(0, 12)}`;
   $('latest').replaceChildren(new Date(latest.date).toLocaleString('zh-CN') + ` · ${latest.ofd_ref} → `, link(latest.commit.slice(0, 12), commitURL(latest)), ' · ', link('原始 JSON', `history/${latest.id}.json`));
   drawChart(records, operation, metric);
   $('results').replaceChildren();
@@ -106,24 +109,39 @@ function render() {
   }
 }
 
+function updateGroups() {
+  const selectedGroup = $('group').value;
+  const goVersion = $('go').value;
+  environments = groups(allRecords.filter(record => !goVersion || record.go === goVersion));
+  $('group').replaceChildren();
+  for (const [id, records] of environments) {
+    const last = records.at(-1);
+    $('group').add(new Option(`${last.cpu} · ${id.slice(0, 8)} · ${records.length} 次`, id));
+  }
+  if (environments.some(([id]) => id === selectedGroup)) $('group').value = selectedGroup;
+  render();
+}
+
 try {
   const response = await fetch('data.json', { cache: 'no-cache' });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const data = await response.json();
   if (data.schema_version !== 1 || !Array.isArray(data.records)) throw new Error('不支持的历史数据格式');
   $('demo-banner').hidden = !data.demo;
-  environments = groups(data.records);
-  if (!environments.length) {
+  allRecords = data.records;
+  if (!allRecords.length) {
     $('status').textContent = '尚无 CI 性能记录。首次 Performance 工作流成功后，数据会自动出现在这里。';
   } else {
-    for (const [id, records] of environments) {
-      const last = records.at(-1);
-      $('group').add(new Option(`${last.cpu} · ${last.go} · ${id.slice(0, 8)} · ${records.length} 次`, id));
+    $('go').add(new Option('全部版本', ''));
+    for (const version of [...new Set(allRecords.map(record => record.go).filter(Boolean))].sort()) {
+      $('go').add(new Option(version, version));
     }
-    for (const id of ['group', 'operation', 'metric']) $(id).addEventListener('change', render);
+    $('go').addEventListener('change', updateGroups);
+    $('group').addEventListener('change', render);
+    for (const id of ['operation', 'metric']) $(id).addEventListener('change', render);
     $('status').hidden = true;
     $('dashboard').hidden = false;
-    render();
+    updateGroups();
   }
 } catch (error) {
   $('status').hidden = false;
