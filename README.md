@@ -27,7 +27,7 @@ gh workflow run performance.yml --repo zc310/ofd-performance -f ofd_ref=main
 Go 构建信息、样本和字体哈希、CPU/系统及各次原始数值。
 分支和标签可能移动，复现时使用结果里的完整 SHA。
 
-测量程序依赖 `pkg/converter` 和 `pkg/webreader` 当前提供的接口。
+测量程序依赖 `pkg/converter` 和 `pkg/reader` 当前提供的接口。
 较早版本如果缺少这些 API，构建会失败；测量该版本需选择与它兼容的测量工具提交。
 构建失败的版本不会产生成功历史。
 
@@ -49,7 +49,7 @@ GOMAXPROCS=1、GOGC=100、GOMEMLIMIT=off。测试顺序执行。
 | `testdata/standards/GBT_42133-2022.pdf` | 14 |
 
 OFD 样本测试四项：打开文档、打开并生成首页 PNG、整份文档转 PDF、提取全文。
-PDF 样本测试 PDF 转 OFD。打开文档使用 `webreader.Open`；PNG、PDF、文字及 PDF→OFD 均直接调用 `converter` 包。
+PDF 样本测试 PDF 转 OFD。打开文档使用 `reader.Open`；PNG、PDF、文字及 PDF→OFD 均直接调用 `converter` 包。
 首页 PNG 使用 `converter.Convert` 和 `Page(1)`，150 DPI、白色背景，当前编码器压缩级别为 7；
 PDF 使用 150 DPI、白色背景、默认压缩和字体子集，
 关闭页面并行渲染。文字提取使用默认接口，不启用 OCR。

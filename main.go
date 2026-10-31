@@ -25,7 +25,7 @@ import (
 
 	"github.com/zc310/ofd/pkg/converter"
 	_ "github.com/zc310/ofd/pkg/converter/import/pdf"
-	"github.com/zc310/ofd/pkg/webreader"
+	"github.com/zc310/ofd/pkg/reader"
 )
 
 var (
@@ -87,12 +87,12 @@ func runChild(input, operation, artifact string) error {
 	start := time.Now()
 	switch operation {
 	case "open":
-		reader, err := webreader.Open(input)
+		document, err := reader.Open(input)
 		if err != nil {
 			return err
 		}
-		r.Pages = reader.PageCount()
-		if err := reader.Close(); err != nil {
+		r.Pages = document.PageCount()
+		if err := document.Close(); err != nil {
 			return err
 		}
 	case "png":
